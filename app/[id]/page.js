@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
+import { supabase } from '../../lib/supabase'
 
 const threadData = {
   '01': {
@@ -83,6 +84,7 @@ export default function Thread() {
   const [replyText, setReplyText] = useState('')
   const [cooldown, setCooldown] = useState(272)
   const [overlayOpen, setOverlayOpen] = useState(false)
+  const [dbPosts, setDbPosts] = useState([])
 
   useEffect(() => {
     function updateTimer() {
@@ -105,6 +107,34 @@ export default function Thread() {
     const interval = setInterval(() => setCooldown(c => c - 1), 1000)
     return () => clearInterval(interval)
   }, [])
+
+  useEffect(() => {
+  loadPosts()
+}, [id])
+
+async function submitPost() {
+  if (!replyText.trim()) return
+  console.log('submitting...', id, replyText.trim())
+  const { data, error } = await supabase
+    .from('posts')
+    .insert({ thread_id: id, author: 'Guest_User', body: replyText.trim() })
+    .select()
+  console.log('result:', data, error)
+  if (!error) {
+    setReplyText('')
+    setOverlayOpen(false)
+    loadPosts()
+  }
+}
+
+async function loadPosts() {
+  const { data, error } = await supabase
+    .from('posts')
+    .select('*')
+    .eq('thread_id', id)
+    .order('created_at', { ascending: true })
+  if (data) setDbPosts(data)
+}
 
   function formatCooldown() {
     if (cooldown <= 0) return 'Ready to post'
@@ -193,39 +223,53 @@ export default function Thread() {
       <div className="posts-wrap">
         <div className="posts-well">
           {thread.posts.map((post) => (
-            <div className="post" key={post.id}>
-              <span className="post-num">#{post.id}</span>
-              <div className="post-meta">
-                <span className="post-author">{post.author}</span>
-                <span className="post-dot">·</span>
-                <span className="post-stats">{post.days} days active</span>
-                <span className="post-time">{post.time}</span>
-              </div>
-              <div className="post-body">
-                {post.body.map((p, j) => <p key={j}>{p}</p>)}
-              </div>
-              {(post.duel || post.discussion) && (
-                <div className="post-branches">
-                  {post.duel && (
-                    <a className="branch-chip duel-chip" href="#">
-                      <span className="btype">⚔ Duel</span>
-                      <span>{post.duel.with}</span>
-                      <span className="post-dot">·</span>
-                      <span className="bcount">{post.duel.count}</span> exchanges
-                    </a>
-                  )}
-                  {post.discussion && (
-                    <a className="branch-chip" href="#">
-                      <span className="btype">Discussion</span>
-                      <span>+ {post.discussion.with}</span>
-                      <span className="post-dot">·</span>
-                      <span className="bcount">{post.discussion.count}</span> exchanges
-                    </a>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+  <div className="post" key={post.id}>
+    <span className="post-num">#{post.id}</span>
+    <div className="post-meta">
+      <span className="post-author">{post.author}</span>
+      <span className="post-dot">·</span>
+      <span className="post-stats">{post.days} days active</span>
+      <span className="post-time">{post.time}</span>
+    </div>
+    <div className="post-body">
+      {post.body.map((p, j) => <p key={j}>{p}</p>)}
+    </div>
+    {(post.duel || post.discussion) && (
+      <div className="post-branches">
+        {post.duel && (
+          <a className="branch-chip duel-chip" href="#">
+            <span className="btype">⚔ Duel</span>
+            <span>{post.duel.with}</span>
+            <span className="post-dot">·</span>
+            <span className="bcount">{post.duel.count}</span> exchanges
+          </a>
+        )}
+        {post.discussion && (
+          <a className="branch-chip" href="#">
+            <span className="btype">Discussion</span>
+            <span>+ {post.discussion.with}</span>
+            <span className="post-dot">·</span>
+            <span className="bcount">{post.discussion.count}</span> exchanges
+          </a>
+        )}
+      </div>
+    )}
+  </div>
+))}
+{dbPosts.map((post, i) => (
+  <div className="post" key={post.id}>
+    <span className="post-num">#{thread.posts.length + i + 1}</span>
+    <div className="post-meta">
+      <span className="post-author">{post.author}</span>
+      <span className="post-dot">·</span>
+      <span className="post-stats">New member</span>
+      <span className="post-time">{new Date(post.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+    </div>
+    <div className="post-body">
+      <p>{post.body}</p>
+    </div>
+  </div>
+))}
         </div>
       </div>
 
@@ -271,6 +315,7 @@ export default function Thread() {
                   Cancel
                 </button>
                 <button
+                  onClick={submitPost}
                   style={{fontFamily: "'Helvetica Neue', sans-serif", fontSize: '11px', letterSpacing: '0.16em', textTransform: 'uppercase', background: '#2A2520', color: '#F2EDE3', border: 'none', padding: '8px 22px', cursor: 'pointer', borderRadius: '3px'}}
                 >
                   Speak
