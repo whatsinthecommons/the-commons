@@ -85,6 +85,8 @@ export default function Thread() {
   const [cooldown, setCooldown] = useState(272)
   const [overlayOpen, setOverlayOpen] = useState(false)
   const [dbPosts, setDbPosts] = useState([])
+  const [currentUser, setCurrentUser] = useState(null)
+  const [currentUsername, setCurrentUsername] = useState('Guest_User')
 
   useEffect(() => {
     function updateTimer() {
@@ -112,14 +114,26 @@ export default function Thread() {
   loadPosts()
 }, [id])
 
+  useEffect(() => {
+  supabase.auth.getSession().then(async ({ data: { session } }) => {
+    if (session?.user) {
+      setCurrentUser(session.user)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single()
+      if (profile) setCurrentUsername(profile.username)
+    }
+  })
+}, [])
+
 async function submitPost() {
   if (!replyText.trim()) return
-  console.log('submitting...', id, replyText.trim())
   const { data, error } = await supabase
     .from('posts')
-    .insert({ thread_id: id, author: 'Guest_User', body: replyText.trim() })
+    .insert({ thread_id: id, author: currentUsername, body: replyText.trim() })
     .select()
-  console.log('result:', data, error)
   if (!error) {
     setReplyText('')
     setOverlayOpen(false)
@@ -161,8 +175,14 @@ async function loadPosts() {
           </nav>
           <span className="dateline">Wednesday, April 22, 2026</span>
           <nav className="header-nav">
-            <a href="#">Sign In</a>
-            <a href="#">Join</a>
+            {currentUser ? (
+              <Link href={`/user/${currentUsername}`} style={{fontWeight: 500, color: 'var(--ink)'}}>{currentUsername}</Link>
+            ) : (
+              <>
+                <Link href="/login">Sign In</Link>
+                <Link href="/login">Join</Link>
+              </>
+            )}
           </nav>
         </div>
         <div className="masthead">

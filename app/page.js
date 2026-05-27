@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { supabase } from '../lib/supabase'
+
 
 export default function Home() {
   const [branchesOpen, setBranchesOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [timer, setTimer] = useState('')
+  const [currentUsername, setCurrentUsername] = useState(null)
 
   useEffect(() => {
     function updateTimer() {
@@ -23,6 +26,19 @@ export default function Home() {
     const interval = setInterval(updateTimer, 1000)
     return () => clearInterval(interval)
   }, [])
+  
+  useEffect(() => {
+  supabase.auth.getSession().then(async ({ data: { session } }) => {
+    if (session?.user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('id', session.user.id)
+        .single()
+      if (profile) setCurrentUsername(profile.username)
+    }
+  })
+}, [])
 
   return (
     <>
@@ -35,9 +51,15 @@ export default function Home() {
           </nav>
           <span className="dateline">Wednesday, April 22, 2026</span>
           <nav className="header-nav">
-            <a href="#">Sign In</a>
-            <a href="#">Join</a>
-          </nav>
+  {currentUsername ? (
+    <Link href={`/user/${currentUsername}`} style={{fontWeight: 500, color: 'var(--ink)', textDecoration: 'none'}}>{currentUsername}</Link>
+  ) : (
+    <>
+      <Link href="/login" style={{color: 'var(--muted)', textDecoration: 'none'}}>Sign In</Link>
+      <Link href="/login" style={{fontWeight: 500, color: 'var(--ink)', textDecoration: 'none'}}>Join</Link>
+    </>
+  )}
+</nav>
         </div>
         <div className="masthead">
           <h1>The Commons</h1>
