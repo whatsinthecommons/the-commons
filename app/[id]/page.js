@@ -173,7 +173,7 @@ async function loadPosts() {
             <a href="#">About</a>
             <a href="#">Curate</a>
           </nav>
-          <span className="dateline">Wednesday, April 22, 2026</span>
+          <span className="dateline">{new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'})}</span>
           <nav className="header-nav">
             {currentUser ? (
               <Link href={`/user/${currentUsername}`} style={{fontWeight: 500, color: 'var(--ink)'}}>{currentUsername}</Link>
@@ -246,7 +246,7 @@ async function loadPosts() {
   <div className="post" key={post.id}>
     <span className="post-num">#{post.id}</span>
     <div className="post-meta">
-      <span className="post-author">{post.author}</span>
+      <Link href={`/user/${post.author}`} style={{textDecoration: 'none', color: 'inherit'}}>{post.author}</Link>
       <span className="post-dot">·</span>
       <span className="post-stats">{post.days} days active</span>
       <span className="post-time">{post.time}</span>
@@ -280,7 +280,7 @@ async function loadPosts() {
   <div className="post" key={post.id}>
     <span className="post-num">#{thread.posts.length + i + 1}</span>
     <div className="post-meta">
-      <span className="post-author">{post.author}</span>
+      <Link href={`/user/${post.author}`} style={{textDecoration: 'none', color: 'inherit'}}>{post.author}</Link>
       <span className="post-dot">·</span>
       <span className="post-stats">New member</span>
       <span className="post-time">{new Date(post.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>

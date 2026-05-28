@@ -49,7 +49,7 @@ export default function Home() {
             <a href="#">About</a>
             <a href="#">Curate</a>
           </nav>
-          <span className="dateline">Wednesday, April 22, 2026</span>
+          <span className="dateline">{new Date().toLocaleDateString('en-US', {weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'})}</span>
           <nav className="header-nav">
   {currentUsername ? (
     <Link href={`/user/${currentUsername}`} style={{fontWeight: 500, color: 'var(--ink)', textDecoration: 'none'}}>{currentUsername}</Link>
