@@ -135,6 +135,24 @@ async function submitPost() {
     .insert({ thread_id: id, author: currentUsername, body: replyText.trim() })
     .select()
   if (!error) {
+    // Update days active if haven't posted today
+    if (currentUser) {
+      const today = new Date().toISOString().split('T')[0]
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('days_active, last_active_date')
+        .eq('id', currentUser.id)
+        .single()
+      if (profile && profile.last_active_date !== today) {
+        await supabase
+          .from('profiles')
+          .update({
+            days_active: (profile.days_active || 0) + 1,
+            last_active_date: today
+          })
+          .eq('id', currentUser.id)
+      }
+    }
     setReplyText('')
     setOverlayOpen(false)
     loadPosts()
